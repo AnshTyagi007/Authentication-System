@@ -1,14 +1,17 @@
-const validate = (schema) => (req, res, next) => {
-    try {
-        schema.parse(req.body);
-        next();
-    } catch (error) {
-        const err= new Error(
-            error.errors?.[0]?.message || "Invalid request data"
-        );
-        err.statusCode = 400;
-        next(err);
+const validate = (schema) => {
+  return (req, res, next) => {
+    const result = schema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.error.errors[0].message,
+      });
     }
+
+    req.body = result.data; // sanitized data
+    next();
+  };
 };
 
 module.exports = validate;
