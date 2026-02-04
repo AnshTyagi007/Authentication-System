@@ -1,4 +1,5 @@
 const User = require("../models/user.model");
+const { generateToken } = require("../utils/token");
 
 const register = async (req, res, next) => {
     try {
@@ -33,10 +34,36 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
     try {
+
+        const { email, password } = req.body;
+
+        const user = await User.findOne({ email }).select("+password");
+        if(!user){
+            const error = new Error("Invalid email or password");
+            error.statusCode = 401;
+            throw error;
+        }
+
+        const isMatch = await user.comparePassword(password);
+        if(!isMatch){
+            const error = new Error("Invalid email or password");
+            error.statusCode = 401;
+            throw error;
+        }
+
+        const token = generateToken({ id: user._id });
+
         res.status(200).json({
             success: true,
-            message: "Login endpoint placeholder"
+            message: "Login successful",
+            token,
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+            }
         });
+        
     } catch (err) {
         next(err);
     }
